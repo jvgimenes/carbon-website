@@ -41,13 +41,6 @@ build:
   allowfullscreen={true}
 />
 
-<InlineNotification>
-
-**Note:** If you get lint errors when you copy the code from the snippets, run
-`ng lint --fix` to fix them.
-
-</InlineNotification>
-
 ## Prerequisites
 
 ### Fork, clone and branch
@@ -101,10 +94,10 @@ git remote -v
 Your terminal should output something like this:
 
 ```bash
-origin	[your forked repo] (fetch)
-origin	[your forked repo] (push)
-upstream	git@github.com:carbon-design-system/carbon-tutorial-angular.git (fetch)
-upstream	git@github.com:carbon-design-system/carbon-tutorial-angular.git (push)
+origin [your forked repo] (fetch)
+origin [your forked repo] (push)
+upstream git@github.com:carbon-design-system/carbon-tutorial-angular.git (fetch)
+upstream git@github.com:carbon-design-system/carbon-tutorial-angular.git (push)
 ```
 
 ### Branch
@@ -144,10 +137,10 @@ directives.
 To create a new Angular project with Angular CLI, just run:
 
 ```bash
-ng new carbon-angular-tutorial
+ng new carbon-angular-tutorial --directory ./
 ```
 
-This will create the new project within the current directory. Make sure you do
+This will create the new project within the current directory, by using `--directory` and `./` parameters. Make sure you do
 this within the cloned fork of the project. When you get prompted, enter the
 following.
 
@@ -229,7 +222,7 @@ UI Shell Carbon component. Using Angular CLI we will create this component
 inside the `src/app` directory.
 
 ```bash
-ng g component header --lint-fix
+ng g component header
 ```
 
 ##### Folder structure
@@ -302,15 +295,14 @@ package.
 
 #### Import and register icons
 
-Now let's import the icons from our `@carbon/icons` package. In `app.module.ts`,
-`app.component.spec.ts` and `header.component.spec.ts`, we need to import each
-individual icon we will use and register them with the `IconService`
+Now let's import the icons from our `@carbon/icons` package. In `app.module.ts`, we need to import each
+individual icon we will use and register them with the `IconService`.
 
 <!-- prettier-ignore-start -->
 ```javascript path=src/app/app.module.ts,src/app/app.component.spec.ts,src/app/header/header.component.spec.ts
-import Notification20 from '@carbon/icons/es/notification/20';
-import UserAvatar20 from '@carbon/icons/es/user--avatar/20';
-import AppSwitcher20 from '@carbon/icons/es/app-switcher/20';
+import Notification16 from '@carbon/icons/es/notification/16';
+import UserAvatar16 from '@carbon/icons/es/user--avatar/16';
+import Apps16 from '@carbon/icons/es/apps/16';
 ```
 <!-- prettier-ignore-end -->
 
@@ -318,14 +310,28 @@ In the `AppModule` class we'll add a constructor that provides us with an
 instance of `IconService` and call `registerAll` with an array of the icons we
 need to use.
 
-```javascript path=src/app/app.module.ts,src/app/app.component.spec.ts,src/app/header/header.component.spec.ts
-constructor(protected iconService: IconService) {
-  iconService.registerAll([
-    Notification20,
-    UserAvatar20,
-    AppSwitcher20
-  ]);
+```javascript path=src/app/app.module.ts
+export class AppModule {
+  constructor(protected iconService: IconService) {
+    iconService.registerAll([Notification16, UserAvatar16, Apps16]);
+  }
 }
+```
+
+Also make sure to update all the necessary imports for `IconService`.
+
+```javascript path=src/app/app.module.ts
+import {
+  UIShellModule,
+  IconModule,
+  IconService,
+} from 'carbon-components-angular';
+```
+
+As the application created is a strict type, It is necessary to create a file, inside `src` folder called `typings.d.rs` with the declaration of carbon icons, otherwise we may receive some type errors.
+
+```javascript path=src/typings.d.ts
+declare module '@carbon/icons/*';
 ```
 
 Then we need to add the template code. Populate `header.component.html` with:
@@ -367,6 +373,8 @@ import { HeaderComponent } from './header/header.component';
 declarations: [HeaderComponent];
 ```
 
+We have to delete all the content into `app.component.html` and add the following HTML:
+
 ```html path=src/app/app.component.html
 <app-header></app-header>
 <main class="cds--content">
@@ -375,13 +383,17 @@ declarations: [HeaderComponent];
 ```
 
 Let's add some padding to the top of the document, so the content is below the
-header. We are going to do this by using the `cds--header` class provided by
+header. We are going to do this by using the `bx--header` class provided by
 carbon. So in `header.component.ts` lets hostbind that class.
 
-```javascript
+The `@HostBinding` tag need to be added right above the constructor method.
+
+```javascript path=src/app/header/header.component.ts
 import { Component, HostBinding } from '@angular/core';
   ...
-  @HostBinding('class.cds--header') headerClass = true;
+  @HostBinding('class.bx--header') headerClass = true;
+  constructor() {}
+  ...
 ```
 
 ### Create pages
@@ -394,8 +406,8 @@ Our app will have two pages. First, we need a landing page. Go ahead and stop
 your development server (with `CTRL-C`) and then:
 
 ```bash
-ng g module home --routing --lint-fix
-ng g component home/landing-page --lint-fix
+ng g module home --routing
+ng g component home/landing-page
 ```
 
 ##### Folder structure
@@ -495,6 +507,16 @@ const routes: Routes = [
 After that we need to do a couple quick fixes to the UI Shell to have it route
 to the repo page.
 
+We need to overwrite the old router into header component and add the new one.
+
+Remove:
+
+```html path=src/app/header/header.component.html
+<ibm-header-item href="/repos">Repositories</ibm-header-item>
+```
+
+And add:
+
 ```html path=src/app/header/header.component.html
 <ibm-header-item [route]="['/repos']">Repositories</ibm-header-item>
 ```
@@ -516,14 +538,60 @@ in `karma.conf.js` instead of Chrome.
 
 </InlineNotification>
 
-We have `lint` and `test` scripts defined in `package.json` that verify file
-formatting for files that have been touched since the last Git commit. You'd
-typically also have that script run your test suite as part of your CI build. Go
+If you have problems with the test running into CI environment, you can use this steps to fix it. Otherwise you can go ahead to `Running tests on you environment` topic.
+
+First you will have to change to .cirvleci/config.yml to use another container image, and set a environment variable.
+
+```yaml path=.cirvleci/config.yml
+version: 2.1
+jobs:
+  step-one:
+    docker:
+      - image: circleci/ruby:2.5-node-browsers-legacy
+        environment:
+          CHROME_BIN: /usr/bin/chrome
+
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - run: npm install
+      - run: npm run test:once
+      - run: npm run build
+
+workflows:
+    main:
+      jobs:
+        - step-one
+```
+
+You will need to add `npm run test:once` in your scripts inside `package.json` as well to be executed. And also a new library called `puppeteer` to provide a correct browser controller to CI execute the tests properly.
+
+```json path=package.json
+"scripts": {
+...
+"test:once": "ng test --watch=false"
+}
+```
+
+```json path=package.json
+"dependencies": {
+...
+"puppeteer": "^15.3.0"
+}
+```
+After that it is necessary to install the added library, so we need to execute:
+```bash
+npm install
+```
+
+#### Running tests on you environment.
+
+We have `test` script defined in `package.json`. You'd
+typically have that script run your test suite as part of your CI build. Go
 ahead and make sure everything looks good with:
 
 ```bash
-ng lint --fix
-npm run lint && npm test
+npm test
 ```
 
 <InlineNotification>
@@ -539,7 +607,8 @@ Before we can create a pull request, we need to stage and commit all of our
 changes:
 
 ```bash
-git add --all && git commit -m "feat(tutorial): complete step 1"
+git add --all
+git commit -m "feat(tutorial): complete step 1"
 ```
 
 Then, push to your repository:
