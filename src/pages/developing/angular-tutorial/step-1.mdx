@@ -140,7 +140,7 @@ To create a new Angular project with Angular CLI, just run:
 ng new carbon-angular-tutorial --directory ./
 ```
 
-This will create the new project within the current directory, by using `--directory` and `./` parameters. Make sure you do
+This will create the new project within the current directory, by using `--directory ./`. Make sure you do
 this within the cloned fork of the project. When you get prompted, enter the
 following.
 
@@ -209,11 +209,10 @@ npm start
 Your app should now be running with the message:
 `** Angular Live Development Server is listening on localhost:4200, open your browser on http://localhost:4200/ **`
 
-Before we start adding components we want to start with an empty project, so
-delete everything in `app.component.html` except for the `router-outler`. We
-will also have to delete the test that was associated with this code. So in
-`app.component.spec.ts`, delete the `should render title` and
-`should have as title 'carbon-angular-tutorial'` test.
+Before we start adding components we want to start with an empty project, so delete everything in `app.component.html` except for the `router-outlet`. We will also have to delete the test that was associated with this code. So in `app.component.spec.ts`, delete the should render title and should have as title `'carbon-angular-tutorial'` test.
+
+Your file should look like this:
+
 
 ### Add UI Shell
 
@@ -328,7 +327,7 @@ import {
 } from 'carbon-components-angular';
 ```
 
-As the application created is a strict type, It is necessary to create a file, inside `src` folder called `typings.d.rs` with the declaration of carbon icons, otherwise we may receive some type errors.
+As the application created is strict by default, it is necessary to create a file, inside src folder called typings.d.ts with the declaration of carbon icons, otherwise we may receive some type errors.
 
 ```javascript path=src/typings.d.ts
 declare module '@carbon/icons/*';
@@ -360,8 +359,7 @@ Then we need to add the template code. Populate `header.component.html` with:
 Notice that the icon names are the same as their file path. This how the
 directive queries the service for the icon.
 
-Next import the header component in `app.component.spec.ts` and add the
-component in `app.component.html`
+Next import the header component in `app.component.spec.ts`.
 
 <!-- prettier-ignore-start -->
 ```javascript path=src/app/app.component.spec.ts
@@ -377,7 +375,7 @@ We have to delete all the content into `app.component.html` and add the followin
 
 ```html path=src/app/app.component.html
 <app-header></app-header>
-<main class="cds--content">
+<main class="bx--content">
   <router-outlet></router-outlet>
 </main>
 ```
@@ -426,8 +424,8 @@ src/app/home
 And a repo page:
 
 ```bash
-ng g module repositories --routing --lint-fix
-ng g component repositories/repo-page --lint-fix
+ng g module repositories --routing
+ng g component repositories/repo-pagefix
 ```
 
 ##### Folder structure
@@ -447,7 +445,7 @@ Now you can restart your server with `npm start`.
 
 ### Add routing
 
-We need to update routing functionality to enable the loading of `repositories`.
+We need to update the routing functionality to enable the loading of the `repositories` component.
 Inside `app-routing.module.ts` we'll add the following code in the routes array:
 
 ```javascript path=src/app-routing.module.ts
@@ -475,8 +473,9 @@ And modify the `NgModule` declaration to use the hash router:
 })
 export class AppRoutingModule {}
 ```
+For the following files, add the route:
 
-And add routes for the landing and repo pages:
+For the `home-routing.module.ts`:
 
 ```javascript path=src/app/home/home-routing.module.ts
 import { LandingPageComponent } from './landing-page/landing-page.component';
@@ -488,7 +487,7 @@ const routes: Routes = [
   },
 ];
 ```
-
+For the `repositories-routing.module.ts`:
 <!-- prettier-ignore-start -->
 
 ```javascript path=src/app/repositories/repositories-routing.module.ts
@@ -507,7 +506,7 @@ const routes: Routes = [
 After that we need to do a couple quick fixes to the UI Shell to have it route
 to the repo page.
 
-We need to overwrite the old router into header component and add the new one.
+We need to overwrite the old router into `header.component.html` and add the new one.
 
 Remove:
 
@@ -515,10 +514,22 @@ Remove:
 <ibm-header-item href="/repos">Repositories</ibm-header-item>
 ```
 
-And add:
+And add into the same file:
 
 ```html path=src/app/header/header.component.html
 <ibm-header-item [route]="['/repos']">Repositories</ibm-header-item>
+```
+
+And to add a route to redirect directly to home page we can remove:
+
+```html path=src/app/header/header.component.html
+<ibm-header name="Carbon Tutorial Angular">
+```
+
+And add instead:
+
+```html path=src/app/header/header.component.html
+<ibm-header name="Carbon Tutorial Angular" [route]="['']">
 ```
 
 You should now have a working header that routes to the repos pages without full
@@ -536,54 +547,53 @@ and demonstrate a couple related concepts.
 **Note:** Before you run any tests, make sure that you are using ChromeHeadless
 in `karma.conf.js` instead of Chrome.
 
-</InlineNotification>
-
-If you have problems with the test running into CI environment, you can use this steps to fix it. Otherwise you can go ahead to `Running tests on you environment` topic.
-
-First you will have to change to .cirvleci/config.yml to use another container image, and set a environment variable.
-
-```yaml path=.cirvleci/config.yml
-version: 2.1
-jobs:
-  step-one:
-    docker:
-      - image: circleci/ruby:2.5-node-browsers-legacy
-        environment:
-          CHROME_BIN: /usr/bin/chrome
-
-    working_directory: ~/repo
-    steps:
-      - checkout
-      - run: npm install
-      - run: npm run test:once
-      - run: npm run build
-
-workflows:
-    main:
-      jobs:
-        - step-one
+```javascript path=karma.conf.js
+module.exports = function (config) {
+  config.set({
+    ...
+    reporters: ['progress', 'kjhtml'],
+    port: 9876,
+    colors: true,
+    logLevel: config.LOG_INFO,
+    autoWatch: true,
+    browsers: ['ChromeHeadless'],
+    singleRun: false,
+    restartOnFileChange: true
+  });
+};
 ```
 
-You will need to add `npm run test:once` in your scripts inside `package.json` as well to be executed. And also a new library called `puppeteer` to provide a correct browser controller to CI execute the tests properly.
+</InlineNotification>
+
+We need to use an updated version of continuos integration file used in `CircleCI`.
+
+Substitute the circleci configuration file for the following code:
+
+```yaml path=.circleci/config.yml
+version: 2.1
+orbs:
+  browser-tools: circleci/browser-tools@1.2.3
+jobs:
+  build:
+    working_directory: ~/ng-project
+    docker:
+      - image: cimg/node:16.13.1-browsers
+    steps:
+      - browser-tools/install-chrome
+      - browser-tools/install-chromedriver
+      - checkout
+      - run: npm install
+      - run: npm run test
+```
+
+You will need to change the script object inside `package.json` file to execute the tests correctly, so the CI can have the correct parameters to be called.
 
 ```json path=package.json
 "scripts": {
 ...
-"test:once": "ng test --watch=false"
+"test": "ng test --no-watch --no-progress --browsers=ChromeHeadless"
 }
 ```
-
-```json path=package.json
-"dependencies": {
-...
-"puppeteer": "^15.3.0"
-}
-```
-After that it is necessary to install the added library, so we need to execute:
-```bash
-npm install
-```
-
 #### Running tests on you environment.
 
 We have `test` script defined in `package.json`. You'd
